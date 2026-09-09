@@ -27,7 +27,7 @@ export default function Hero() {
             Simple Short-Term Loan Applications
           </h1>
 
-          <p className="mt-6 max-w-lg text-lg leading-relaxed text-navy-300">
+          <p className="mt-6 max-w-lg text-lg leading-relaxed text-green-200">
             Submit your application online in minutes. Every request is reviewed
             for eligibility, verified, and subject to underwriting, applicable
             state law, and lender availability — we'll walk you through exactly
@@ -51,7 +51,7 @@ export default function Hero() {
             ].map(([stat, label]) => (
               <div key={label}>
                 <dt className="font-display text-2xl font-semibold text-white">{stat}</dt>
-                <dd className="mt-1 text-xs text-navy-400">{label}</dd>
+                <dd className="mt-1 text-xs text-green-200">{label}</dd>
               </div>
             ))}
           </dl>
@@ -62,20 +62,20 @@ export default function Hero() {
           <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-brand-500/20 to-accent-500/10 blur-2xl" />
           <div className="relative rounded-2xl border border-white/10 bg-navy-900/80 p-5 shadow-lifted backdrop-blur">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-navy-300">Application QF-2026-104829</p>
-              <span className="rounded-full bg-brand-500/15 px-2.5 py-1 text-xs font-semibold text-brand-300">Under Review</span>
+              <p className="text-sm font-medium text-green-300">Application QF-2026-104829</p>
+              <span className="rounded-full bg-brand-500/15 px-2.5 py-1 text-xs font-semibold text-brand-400">Under Review</span>
             </div>
 
             <div className="mt-5 rounded-xl bg-white/5 p-4">
-              <p className="text-xs text-navy-400">Requested amount</p>
+              <p className="text-xs text-green-200">Requested amount</p>
               <p className="mt-1 font-display text-3xl font-semibold text-white">$750.00</p>
               <div className="mt-4 grid grid-cols-2 gap-4 border-t border-white/10 pt-4 text-sm">
                 <div>
-                  <p className="text-xs text-navy-400">Loan term</p>
+                  <p className="text-xs text-green-200">Loan term</p>
                   <p className="font-medium text-white">21 days</p>
                 </div>
                 <div>
-                  <p className="text-xs text-navy-400">Registration fee</p>
+                  <p className="text-xs text-green-200">Registration fee</p>
                   <p className="font-medium text-white">$50.00</p>
                 </div>
               </div>
@@ -102,7 +102,7 @@ export default function Hero() {
                 </li>
               ))}
             </ul>
-            <p className="mt-5 text-[11px] leading-relaxed text-navy-500">
+            <p className="mt-5 text-[11px] leading-relaxed text-gray-400">
               Sample application shown for illustration. Actual status, terms, and
               fees are specific to your submitted application.
             </p>
