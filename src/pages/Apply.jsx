@@ -5,7 +5,6 @@ import Input from '../components/ui/Input.jsx'
 import Select from '../components/ui/Select.jsx'
 import Button from '../components/ui/Button.jsx'
 import Alert from '../components/Alert.jsx'
-import LoadingSpinner from '../components/LoadingSpinner.jsx'
 import ApplicationStepper from '../components/ApplicationStepper.jsx'
 import LoanAmountSelector from '../components/LoanAmountSelector.jsx'
 import FeeDisclosure from '../components/FeeDisclosure.jsx'
@@ -29,22 +28,24 @@ const EMPTY_FORM = {
 }
 
 export default function Apply() {
-  const { user, loading: authLoading } = useAuth()
+  const { user } = useAuth()
   const navigate = useNavigate()
 
-  const [config, setConfig] = useState(null)
-  const [configLoading, setConfigLoading] = useState(true)
+  const [config, setConfig] = useState(FALLBACK_LOAN_CONFIG)
   const [step, setStep] = useState(1)
   const [form, setForm] = useState(EMPTY_FORM)
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
 
-  useEffect(() => {
-    getLoanConfig().then(setConfig).catch(() => setConfig(FALLBACK_LOAN_CONFIG)).finally(() => setConfigLoading(false))
-    const draft = loadApplicationDraft()
-    if (draft) setForm((f) => ({ ...f, ...draft }))
-  }, [])
+ useEffect(() => {
+  // Render immediately with sensible fallback defaults (same ones used
+  // elsewhere in the app) rather than blocking the whole page behind this
+  // fetch — swap in the real, admin-configured values once they arrive.
+  getLoanConfig().then(setConfig).catch(() => {})
+  const draft = loadApplicationDraft()
+  if (draft) setForm((f) => ({ ...f, ...draft }))
+}, [])
 
   useEffect(() => {
     const { confirmAccurate, ...draftable } = form
@@ -128,9 +129,6 @@ export default function Apply() {
     }
   }
 
-  if (configLoading || authLoading) {
-    return <div className="container-page py-24"><LoadingSpinner full label="Preparing your application..." /></div>
-  }
 
   return (
     <div className="container-page max-w-3xl py-12">

@@ -1,7 +1,7 @@
 // applicationService.jsx — loan application CRUD against Firestore.
 import {
   addDoc, collection, doc, getDoc, getDocs, query, where, orderBy,
-  serverTimestamp, updateDoc,
+  serverTimestamp, updateDoc, onSnapshot,
 } from 'firebase/firestore'
 import { db } from '../config/firebase.jsx'
 import { APPLICATION_STATUS, FEE_STATUS } from '../config/constants.jsx'
@@ -74,19 +74,23 @@ export async function submitApplication({ userId, formData, loanConfig }) {
     updatedAt: serverTimestamp(),
   })
 
-  await createNotification(userId, {
+  // These two writes are independent of each other and non-critical to the
+  // customer's flow — fire them in the background rather than blocking
+  // navigation to the confirmation page on them. Errors are caught and
+  // logged so a failure here never surfaces as a failed submission.
+  createNotification(userId, {
     title: 'Application submitted',
     message: `Your application ${reference} has been submitted and is being prepared for review.`,
     type: 'application',
-  })
+  }).catch((err) => console.error('Failed to create submission notification:', err))
 
-  await createAuditLogEntry({
+  createAuditLogEntry({
     actorId: userId,
     actorType: 'customer',
     action: 'application_submitted',
     targetId: appRef.id,
     details: { reference, amount, feeAmount },
-  })
+  }).catch((err) => console.error('Failed to write audit log entry:', err))
 
   return { id: appRef.id, reference }
 }
@@ -94,6 +98,20 @@ export async function submitApplication({ userId, formData, loanConfig }) {
 export async function getApplication(applicationId) {
   const snap = await getDoc(doc(db, 'applications', applicationId))
   return snap.exists() ? { id: snap.id, ...snap.data() } : null
+}
+
+/**
+ * Live-subscribes to an application document. Used on the application detail
+ * page so that a payment auto-verified by the Stripe webhook (see
+ * functions/index.js) appears immediately, without a manual refresh.
+ * Returns an unsubscribe function — call it on unmount.
+ */
+export function subscribeToApplication(applicationId, onChange, onError) {
+  return onSnapshot(
+    doc(db, 'applications', applicationId),
+    (snap) => onChange(snap.exists() ? { id: snap.id, ...snap.data() } : null),
+    onError
+  )
 }
 
 export async function listUserApplications(userId) {

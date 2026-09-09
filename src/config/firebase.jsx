@@ -3,7 +3,7 @@
 // all values are read from Vite environment variables (see .env.example).
 import { initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
-import { getFirestore } from 'firebase/firestore'
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -26,6 +26,13 @@ if (missing.length) {
 
 export const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
-export const db = getFirestore(app)
+
+// Persistent local cache: repeat reads of unchanged data are served instantly
+// from IndexedDB instead of round-tripping to Firestore every time, which
+// matters a lot when the database region is far from the visitor. Falls back
+// gracefully (in-memory only) in browsers/tabs where IndexedDB isn't available.
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+})
 
 export default app
