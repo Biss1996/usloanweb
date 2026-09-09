@@ -1,66 +1,67 @@
-import React, { useState } from 'react'
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
-import { db } from '../../config/firebase.jsx'
+import React from 'react'
+import { Link } from 'react-router-dom'
 import Card from '../../components/ui/Card.jsx'
-import Input from '../../components/ui/Input.jsx'
-import Select from '../../components/ui/Select.jsx'
-import Button from '../../components/ui/Button.jsx'
-import Alert from '../../components/Alert.jsx'
+import Badge from '../../components/ui/Badge.jsx'
+import LoadingSpinner from '../../components/LoadingSpinner.jsx'
 import { useAuth } from '../../hooks/useAuth.jsx'
-import { isRequired, isValidUsPhone } from '../../utils/validation.jsx'
-import { US_STATES } from '../../config/constants.jsx'
+import { formatDate, titleCase } from '../../utils/formatters.jsx'
+import { BRAND } from '../../config/constants.jsx'
+
+// Profile information is captured once at registration and displayed
+// read-only here. It intentionally cannot be edited from this screen —
+// changes to identity details (name, phone, state) require verification,
+// so customers are directed to contact support instead.
 
 export default function Profile() {
-  const { user, profile, refreshProfile } = useAuth()
-  const [form, setForm] = useState({
-    firstName: profile?.firstName || '', lastName: profile?.lastName || '',
-    phone: profile?.phone || '', state: profile?.state || '',
-  })
-  const [errors, setErrors] = useState({})
-  const [status, setStatus] = useState('idle')
+  const { profile, loading } = useAuth()
 
-  const update = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    const next = {}
-    if (!isRequired(form.firstName)) next.firstName = 'Required.'
-    if (!isRequired(form.lastName)) next.lastName = 'Required.'
-    if (!isValidUsPhone(form.phone)) next.phone = 'Please enter a valid US phone number.'
-    setErrors(next)
-    if (Object.keys(next).length) return
-
-    setStatus('loading')
-    try {
-      await updateDoc(doc(db, 'users', user.uid), { ...form, updatedAt: serverTimestamp() })
-      await refreshProfile()
-      setStatus('success')
-    } catch (err) {
-      setStatus('error')
-    }
+  if (loading || !profile) {
+    return <LoadingSpinner full label="Loading your profile..." />
   }
+
+  const fields = [
+    ['First name', profile.firstName],
+    ['Last name', profile.lastName],
+    ['Email', profile.email],
+    ['Phone', profile.phone],
+    ['State', profile.state],
+  ]
 
   return (
     <div>
       <h1 className="font-display text-2xl font-semibold text-navy-900">Profile</h1>
-      <p className="mt-1 text-navy-500">Keep your contact information up to date.</p>
+      <p className="mt-1 text-navy-500">
+        This is the information you provided when you created your account.
+      </p>
 
       <Card className="mt-6 max-w-xl">
-        <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-          {status === 'success' && <Alert type="success">Your profile has been updated.</Alert>}
-          {status === 'error' && <Alert type="error">We couldn't save your changes. Please try again.</Alert>}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-semibold text-navy-900">{profile.firstName} {profile.lastName}</p>
+            <p className="text-sm text-navy-500">Member since {formatDate(profile.createdAt)}</p>
+          </div>
+          <Badge tone={profile.accountStatus === 'active' ? 'success' : 'neutral'}>
+            {titleCase(profile.accountStatus)}
+          </Badge>
+        </div>
 
-          <Input label="Email" value={profile?.email || ''} disabled className="bg-navy-50 text-navy-400" />
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <Input label="First name" required value={form.firstName} onChange={update('firstName')} error={errors.firstName} />
-            <Input label="Last name" required value={form.lastName} onChange={update('lastName')} error={errors.lastName} />
-          </div>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <Input label="Phone" required value={form.phone} onChange={update('phone')} error={errors.phone} />
-            <Select label="State" required options={US_STATES} value={form.state} onChange={update('state')} />
-          </div>
-          <Button type="submit" variant="accent" loading={status === 'loading'}>Save changes</Button>
-        </form>
+        <dl className="mt-6 grid grid-cols-1 gap-5 border-t border-navy-100 pt-6 sm:grid-cols-2">
+          {fields.map(([label, value]) => (
+            <div key={label}>
+              <dt className="text-xs font-medium uppercase tracking-wide text-navy-400">{label}</dt>
+              <dd className="mt-1 text-sm font-medium text-navy-800">{value || '—'}</dd>
+            </div>
+          ))}
+        </dl>
+      </Card>
+
+      <Card className="mt-4 max-w-xl bg-navy-50/60">
+        <p className="text-sm text-navy-600">
+          To update your name, phone number, or state, please{' '}
+          <Link to="/contact" className="font-medium text-accent-600 hover:text-accent-700">contact support</Link>
+          {' '}— we verify identity details before changing them on an account.
+        </p>
+        <p className="mt-2 text-xs text-navy-400">Support: {BRAND.supportEmail} &middot; {BRAND.supportPhone}</p>
       </Card>
     </div>
   )

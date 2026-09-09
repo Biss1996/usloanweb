@@ -18,7 +18,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!user) return
-    listUserApplications(user.uid).then(setApps).catch(() => setApps([])).finally(() => setLoading(false))
+    listUserApplications(user.uid).then(setApps).catch((err) => { console.error('LIST APPS ERROR:', err); setApps([]) }).finally(() => setLoading(false))
   }, [user])
 
   const summary = {
