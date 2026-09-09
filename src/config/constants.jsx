@@ -3,14 +3,14 @@
 // never from this file. These are only used as last-resort UI fallbacks/loading states.
 
 export const BRAND = {
-  name: 'QuickFund USA',
-  shortName: 'QuickFund',
+  name: 'Payday Cash',
+  shortName: 'Payday Cash',
   tagline: 'Simple, transparent short-term loan applications.',
-  supportEmail: 'support@quickfundusa.example',
-  supportPhone: '(800) 555-0199',
+  supportEmail: 'support@paydaycash.online',
+  supportPhone: '(601)9078920',
 }
 
-export const DEFAULT_LOAN_AMOUNTS = [100, 200, 300, 400, 500, 750, 1000, 1500, 2000]
+export const DEFAULT_LOAN_AMOUNTS = [500, 1000, 1500, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]
 
 export const APPLICATION_STATUS = {
   DRAFT: 'draft',

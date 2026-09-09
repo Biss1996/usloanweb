@@ -1,7 +1,7 @@
-# QuickFund USA
+# Payday Cash
 
 A complete, working example of a modern short-term loan application platform, built with
-**React + Vite + Tailwind CSS + Firebase**. QuickFund USA is a fictional demonstration brand —
+**React + Vite + Tailwind CSS + Firebase**. Payday Cash is a fictional demonstration brand —
 this is not a real, licensed lender.
 
 ## Tech stack
@@ -140,7 +140,7 @@ retroactively changes an already-submitted application's fee.
 
 ## 5. Adding real Firebase payment links
 
-QuickFund USA **never** builds its own checkout page or payment URL. Instead, an administrator
+Payday Cash **never** builds its own checkout page or payment URL. Instead, an administrator
 adds real, external payment-provider links directly in Firestore, and the app looks one up by
 matching the applicant's requested loan amount against a link's `loanMin`–`loanMax` range.
 

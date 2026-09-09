@@ -8,12 +8,12 @@ const LOAN_CONFIG_PATH = ['settings', 'loanConfig']
 // Fallback used only while Firestore data is loading or if a document has not
 // been created yet. The admin dashboard is the authoritative source.
 export const FALLBACK_LOAN_CONFIG = {
-  minLoanAmount: 100,
-  maxLoanAmount: 2000,
+  minLoanAmount: 500,
+  maxLoanAmount: 10000,
   loanIncrements: DEFAULT_LOAN_AMOUNTS,
-  apr: 399,
+  apr: 250,
   minimumTerm: 14,
-  maximumTerm: 30,
+  maximumTerm: 90,
   applicationsEnabled: true,
   registrationFeeEnabled: true,
   feeThreshold: 1000,

@@ -117,8 +117,8 @@ export default function Home() {
           </div>
 
           <Card className="bg-navy-900 text-white">
-            <h3 className="font-display text-xl font-semibold">Borrow responsibly</h3>
-            <p className="mt-3 text-sm leading-relaxed text-navy-300">
+            <h3 className="font-display text-xl text-navy-600 font-semibold">Borrow responsibly</h3>
+            <p className="mt-3 text-sm leading-relaxed text-navy-600">
               Short-term loans can be an expensive way to borrow money. Before applying, review the
               estimated APR, fees, and total repayment, and consider whether a short-term loan is the
               right choice for your situation.
