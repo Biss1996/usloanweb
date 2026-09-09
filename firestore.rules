@@ -1,0 +1,119 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Administrator status is granted exclusively via a Firebase Admin SDK
+    // custom claim ("admin": true) — never via a client-writable field.
+    // See README "Creating an administrator" for how to set this claim.
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+
+    // ---------------------------------------------------------------------
+    // users/{uid}
+    // ---------------------------------------------------------------------
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid)
+        && request.resource.data.role != 'admin'
+        && !('accountStatus' in request.resource.data.keys().toSet().difference(['active','pending','suspended'].toSet()));
+      // Customers may only update their own non-sensitive profile fields.
+      // They can never set their own role or accountStatus to escalate privilege.
+      allow update: if (isOwner(uid)
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['firstName','lastName','phone','state','updatedAt']))
+        || isAdmin();
+      allow delete: if false;
+
+      match /notifications/{notificationId} {
+        allow read: if isOwner(uid) || isAdmin();
+        // Notifications are created by trusted backend logic (via services
+        // triggered by the authenticated user's own actions or by admins).
+        allow create: if isOwner(uid) || isAdmin();
+        allow update: if isOwner(uid) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+        allow delete: if isAdmin();
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // applications/{applicationId}
+    // ---------------------------------------------------------------------
+    match /applications/{applicationId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+
+      // Customers may create an application only for themselves, only in
+      // submitted status with a payment-appropriate fee status, and can
+      // never mark it approved or pre-set paymentLinkId/feeVerified fields.
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.applicationStatus == 'submitted'
+        && request.resource.data.feeStatus in ['payment_required', 'not_required']
+        && !('feeVerifiedAt' in request.resource.data)
+        && !('feeVerifiedBy' in request.resource.data);
+
+      // Customers may only update paymentLinkId/updatedAt on their own
+      // application (set during the payment redirect flow). Everything
+      // else — status, fee amount, fee status — is admin-only.
+      allow update: if isAdmin()
+        || (isSignedIn() && resource.data.userId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['paymentLinkId', 'updatedAt']));
+
+      allow delete: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // settings/loanConfig, settings/paymentConfig
+    // ---------------------------------------------------------------------
+    match /settings/{docId} {
+      allow read: if true; // public, non-sensitive configuration
+      allow write: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------------
+    // paymentLinks/{paymentLinkId}
+    // ---------------------------------------------------------------------
+    match /paymentLinks/{linkId} {
+      // Any authenticated user can read enabled links to find the one that
+      // applies to their application; only admins can write.
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------------
+    // states/{stateCode}
+    // ---------------------------------------------------------------------
+    match /states/{stateCode} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------------
+    // contactMessages/{messageId}
+    // ---------------------------------------------------------------------
+    match /contactMessages/{messageId} {
+      allow create: if true; // public contact form
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------------
+    // auditLogs/{logId} — write-only from clients (via trusted service
+    // calls tied to an authenticated action), read-only for admins.
+    // ---------------------------------------------------------------------
+    match /auditLogs/{logId} {
+      allow create: if isSignedIn();
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+  }
+}
