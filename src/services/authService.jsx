@@ -1,62 +1,127 @@
-// authService.jsx — all Firebase Authentication + user profile logic lives here.
+// authService.jsx — Firebase Authentication and user profile operations.
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signOut as fbSignOut,
+  signOut as firebaseSignOut,
   sendPasswordResetEmail,
   updateProfile,
 } from 'firebase/auth'
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore'
+
+import {
+  doc,
+  getDoc,
+  serverTimestamp,
+  setDoc,
+} from 'firebase/firestore'
+
 import { auth, db } from '../config/firebase.jsx'
 
 /**
- * Register a new customer account.
- * Never stores plaintext passwords — Firebase Authentication handles credential hashing.
+ * Registers a customer account.
+ * Firebase Authentication securely handles the password.
  */
-export async function registerUser({ firstName, lastName, email, phone, state, password }) {
-  const cred = await createUserWithEmailAndPassword(auth, email, password)
-  await updateProfile(cred.user, { displayName: `${firstName} ${lastName}` })
+export async function registerUser({
+  firstName,
+  lastName,
+  email,
+  phone,
+  state,
+  password,
+}) {
+  const normalizedFirstName = firstName.trim()
+  const normalizedLastName = lastName.trim()
+  const normalizedEmail = email.trim().toLowerCase()
 
-  await setDoc(doc(db, 'users', cred.user.uid), {
-    firstName,
-    lastName,
-    email,
-    phone,
+  const credential = await createUserWithEmailAndPassword(
+    auth,
+    normalizedEmail,
+    password
+  )
+
+  const userDocument = {
+    firstName: normalizedFirstName,
+    lastName: normalizedLastName,
+    email: normalizedEmail,
+    phone: phone.trim(),
     state,
     accountStatus: 'active',
     role: 'customer',
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-  })
+  }
 
-  return cred.user
-}
+  // These operations are independent, so execute them concurrently.
+  await Promise.all([
+    updateProfile(credential.user, {
+      displayName: `${normalizedFirstName} ${normalizedLastName}`,
+    }),
 
-export async function loginUser(email, password) {
-  const cred = await signInWithEmailAndPassword(auth, email, password)
-  return cred.user
-}
+    setDoc(
+      doc(db, 'users', credential.user.uid),
+      userDocument
+    ),
+  ])
 
-export async function logoutUser() {
-  return fbSignOut(auth)
-}
-
-export async function requestPasswordReset(email) {
-  return sendPasswordResetEmail(auth, email)
-}
-
-export async function getUserProfile(uid) {
-  const snap = await getDoc(doc(db, 'users', uid))
-  return snap.exists() ? { id: snap.id, ...snap.data() } : null
+  return credential.user
 }
 
 /**
- * Refreshes the Firebase ID token and reads custom claims to determine admin status.
- * Admin status is granted via Firebase Admin SDK custom claims (see README), never
- * via a client-writable Firestore field.
+ * Signs in an existing customer.
  */
-export async function getIsAdmin(user) {
+export async function loginUser(email, password) {
+  const normalizedEmail = email.trim().toLowerCase()
+
+  const credential = await signInWithEmailAndPassword(
+    auth,
+    normalizedEmail,
+    password
+  )
+
+  return credential.user
+}
+
+/**
+ * Signs out the current user.
+ */
+export async function logoutUser() {
+  await firebaseSignOut(auth)
+}
+
+/**
+ * Sends a password-reset email.
+ */
+export async function requestPasswordReset(email) {
+  const normalizedEmail = email.trim().toLowerCase()
+
+  await sendPasswordResetEmail(auth, normalizedEmail)
+}
+
+/**
+ * Gets the customer's Firestore profile.
+ */
+export async function getUserProfile(uid) {
+  if (!uid) return null
+
+  const snapshot = await getDoc(doc(db, 'users', uid))
+
+  if (!snapshot.exists()) return null
+
+  return {
+    id: snapshot.id,
+    ...snapshot.data(),
+  }
+}
+
+/**
+ * Reads the administrator custom claim from the current cached ID token.
+ *
+ * Set forceRefresh to true only immediately after an administrator's custom
+ * claims have been changed on the server.
+ */
+export async function getIsAdmin(user, forceRefresh = false) {
   if (!user) return false
-  const tokenResult = await user.getIdTokenResult(true)
+
+  const tokenResult = await user.getIdTokenResult(forceRefresh)
+
   return Boolean(tokenResult.claims?.admin)
 }

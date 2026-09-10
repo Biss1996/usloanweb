@@ -1,5 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+
 import LoanCalculator from '../components/LoanCalculator.jsx'
 import Card from '../components/ui/Card.jsx'
 import Button from '../components/ui/Button.jsx'
@@ -7,53 +8,91 @@ import DisclosureBox from '../components/DisclosureBox.jsx'
 
 export default function LoanOptions() {
   return (
-    <div className="container-page py-16">
-      <div className="max-w-2xl">
-        <h1 className="font-display text-4xl font-semibold text-navy-900">Loan options</h1>
+    <main className="container-page py-16">
+      <header className="max-w-2xl">
+        <h1 className="font-display text-4xl font-semibold text-navy-900">
+          Loan options
+        </h1>
+
         <p className="mt-4 text-lg text-navy-500">
-          Explore available loan amounts and terms, and see transparent, estimated costs before
-          you apply.
+          Explore available loan amounts, estimated terms and
+          potential costs before submitting an application.
         </p>
-      </div>
+      </header>
 
-      <div className="mt-10">
+      <section
+        className="mt-10"
+        aria-labelledby="loan-calculator-heading"
+      >
+        <h2
+          id="loan-calculator-heading"
+          className="sr-only"
+        >
+          Loan calculator
+        </h2>
+
         <LoanCalculator />
-      </div>
+      </section>
 
-      <div className="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-3">
+      <section
+        className="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-3"
+        aria-label="Loan information"
+      >
         <Card>
-          <h3 className="font-semibold text-navy-900">Flexible amounts</h3>
+          <h2 className="font-semibold text-navy-900">
+            Available amounts
+          </h2>
+
           <p className="mt-2 text-sm text-navy-500">
-            Requestable loan amounts are configured by our team and shown in the calculator above.
-            Availability depends on your state and eligibility.
+            Available amounts may depend on your state,
+            eligibility, verification and underwriting.
           </p>
         </Card>
+
         <Card>
-          <h3 className="font-semibold text-navy-900">Short terms</h3>
+          <h2 className="font-semibold text-navy-900">
+            Repayment terms
+          </h2>
+
           <p className="mt-2 text-sm text-navy-500">
-            Terms are designed for short-term needs. Your specific term and repayment date are
-            confirmed after your application is reviewed.
+            The repayment period, payment schedule and due dates
+            will be disclosed before you enter a loan agreement.
           </p>
         </Card>
+
         <Card>
-          <h3 className="font-semibold text-navy-900">One-time registration fee</h3>
+          <h2 className="font-semibold text-navy-900">
+            Clear disclosures
+          </h2>
+
           <p className="mt-2 text-sm text-navy-500">
-            A registration fee may apply based on your requested amount. This is calculated and
-            shown to you before submission.
+            Review the applicable APR, finance charges, payment
+            schedule and total repayment amount before accepting
+            an offer.
           </p>
         </Card>
-      </div>
+      </section>
 
       <DisclosureBox className="mt-10">
         <p>
-          Loan availability, amounts, terms, APR, and fees vary by state and are subject to
-          eligibility, verification, and underwriting. Applying does not guarantee approval.
+          Loan availability, amounts, terms, APR and fees vary by
+          state and are subject to eligibility, verification and
+          underwriting. Submitting an application does not
+          guarantee approval or funding. Review all disclosures
+          before accepting a loan.
         </p>
       </DisclosureBox>
 
       <div className="mt-10 text-center">
-        <Button as={Link} to="/apply" variant="accent" size="lg">Start your application</Button>
+        <Button
+          as={Link}
+          to="/apply"
+          variant="accent"
+          size="lg"
+        >
+          Check available options
+        </Button>
       </div>
-    </div>
+    </main>
   )
 }
