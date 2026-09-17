@@ -1,9 +1,12 @@
 // firebase.jsx
-// Central Firebase initialization. Never hardcode production credentials here —
-// all values are read from Vite environment variables (see .env.example).
-import { initializeApp } from 'firebase/app'
-import { getAuth } from 'firebase/auth'
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore'
+
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -12,27 +15,28 @@ const firebaseConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
-}
+};
 
-const missing = Object.entries(firebaseConfig).filter(([, v]) => !v)
+const missing = Object.entries(firebaseConfig).filter(([, value]) => !value);
+
 if (missing.length) {
-  // eslint-disable-next-line no-console
-  console.warn(
-    '[firebase.jsx] Missing environment variables:',
-    missing.map(([k]) => k).join(', '),
-    '\nCopy .env.example to .env and fill in your Firebase project values.'
-  )
+  console.error(
+    "[firebase.jsx] Missing Firebase environment variables:",
+    missing.map(([key]) => key).join(", ")
+  );
 }
 
-export const app = initializeApp(firebaseConfig)
-export const auth = getAuth(app)
+export const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
 
-// Persistent local cache: repeat reads of unchanged data are served instantly
-// from IndexedDB instead of round-tripping to Firestore every time, which
-// matters a lot when the database region is far from the visitor. Falls back
-// gracefully (in-memory only) in browsers/tabs where IndexedDB isn't available.
 export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
-})
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
 
-export default app
+  // Fixes Firestore WebChannel "Unknown SID" errors caused by
+  // some production proxies, CDNs, and network configurations.
+  experimentalForceLongPolling: import.meta.env.PROD,
+});
+
+export default app;
