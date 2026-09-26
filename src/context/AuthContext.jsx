@@ -5,9 +5,10 @@ import React, {
   useMemo,
   useState,
 } from 'react'
+
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from '../config/firebase.jsx'
-import { getUserProfile, getIsAdmin } from '../services/authService.jsx'
+import { getUserProfile } from '../services/authService.jsx'
 
 export const AuthContext = createContext(null)
 
@@ -15,48 +16,77 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
-
-  // "loading" only represents Firebase Authentication.
   const [loading, setLoading] = useState(true)
   const [profileLoading, setProfileLoading] = useState(false)
 
   useEffect(() => {
     let active = true
+    let authChange = 0
 
     const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
+      const thisChange = ++authChange
+
       if (!active) return
 
       setUser(fbUser)
+      setIsAdmin(false)
 
       if (!fbUser) {
         setProfile(null)
-        setIsAdmin(false)
         setProfileLoading(false)
         setLoading(false)
         return
       }
 
-      // Authentication is complete. Do not block the app while Firestore loads.
-      setLoading(false)
+      // Keep protected routes waiting until the admin claim is known.
+      setLoading(true)
+      setProfile(null)
       setProfileLoading(true)
 
-      Promise.all([
-        getUserProfile(fbUser.uid).catch((error) => {
-          console.error('Failed to load user profile:', error)
-          return null
-        }),
-        getIsAdmin(fbUser).catch((error) => {
-          console.error('Failed to read admin claim:', error)
-          return false
-        }),
-      ]).then(([nextProfile, admin]) => {
-        // Ignore stale results after logout or account switching.
-        if (!active || auth.currentUser?.uid !== fbUser.uid) return
+      fbUser
+        .getIdTokenResult()
+        .then((tokenResult) => {
+          if (
+            !active ||
+            thisChange !== authChange ||
+            auth.currentUser?.uid !== fbUser.uid
+          ) {
+            return
+          }
 
-        setProfile(nextProfile)
-        setIsAdmin(admin)
-        setProfileLoading(false)
-      })
+          setIsAdmin(tokenResult.claims.admin === true)
+        })
+        .catch((error) => {
+          console.error('Failed to read admin claim:', error)
+
+          if (active && thisChange === authChange) {
+            setIsAdmin(false)
+          }
+        })
+        .finally(() => {
+          if (active && thisChange === authChange) {
+            setLoading(false)
+          }
+        })
+
+      getUserProfile(fbUser.uid)
+        .then((nextProfile) => {
+          if (
+            active &&
+            thisChange === authChange &&
+            auth.currentUser?.uid === fbUser.uid
+          ) {
+            setProfile(nextProfile)
+          }
+        })
+        .catch((error) => {
+          console.error('Failed to load user profile:', error)
+        })
+        .finally(() => {
+          if (active && thisChange === authChange) {
+            setProfileLoading(false)
+          }
+        })
     })
 
     return () => {
@@ -98,7 +128,14 @@ export function AuthProvider({ children }) {
       profileLoading,
       refreshProfile,
     }),
-    [user, profile, isAdmin, loading, profileLoading, refreshProfile]
+    [
+      user,
+      profile,
+      isAdmin,
+      loading,
+      profileLoading,
+      refreshProfile,
+    ]
   )
 
   return (
